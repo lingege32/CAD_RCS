@@ -24,7 +24,7 @@ inline void PrintError(int argc, char **argv) {
             << " -h/-e <blif> AND_CONSTRAINT OR_CONSTRAINT INV_CONSTRAINT\n";
   std::cout
       << "  " << argv[0]
-      << " -v <blif> AND_CONSTRAINT OR_CONSTRAINT INV_CONSTRAINT <ans_file>\n";
+      << " -v    <blif> AND_CONSTRAINT OR_CONSTRAINT INV_CONSTRAINT <ans_file>\n";
   exit(1);
 }
 
