@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+namespace {
 
 std::vector<std::string> split(const std::string &line) {
   std::vector<std::string> split;
@@ -14,6 +15,7 @@ std::vector<std::string> split(const std::string &line) {
   }
   return split;
 }
+} // namespace
 
 LogicGate getLogic(size_t condition, size_t input_size) {
   if (input_size == 1) {

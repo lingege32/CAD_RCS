@@ -1,0 +1,9 @@
+Heuristic Scheduling Result
+1: {h} {j} {i} 
+2: {l} {g} {} 
+3: {m} {k} {p} 
+4: {o} {} {} 
+5: {n} {} {} 
+6: {} {} {q} 
+LATENCY: 6
+END

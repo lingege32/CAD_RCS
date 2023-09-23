@@ -2,12 +2,17 @@
 #include "algorithm.hpp"
 #include "arg_parser.hpp"
 #include "parser.hpp"
+#include "validate.hpp"
 int main(int argc, char **argv) {
   auto arg = ParseArgument(argc, argv);
   Parser parse;
   parse.parse(arg.file);
-//   parse.print();
-
+  //   parse.print();
+  if (arg.mode == "-v") {
+    Validate v{arg.target_file, arg.and_constraint, arg.or_constraint,
+               arg.inv_constraint};
+    return v.validate(parse.getAllNodes());
+  }
   auto algorithm = makeAlgorithm(arg.mode);
   algorithm->parse(parse.getAllNodes());
   auto result =

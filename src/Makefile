@@ -1,8 +1,8 @@
 CC=g++
 FLAGS=-O3 -Wall -Wextra
-SOURCES=main.cpp parser.cpp heuristic.cpp algorithm.cpp
+SOURCES=main.cpp parser.cpp heuristic.cpp algorithm.cpp validate.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
-HEADERS=arg_parser.hpp parser.hpp heuristic.hpp algorithm.hpp
+HEADERS=arg_parser.hpp parser.hpp heuristic.hpp algorithm.hpp validate.hpp
 EXECUTABLE=main
 
 
