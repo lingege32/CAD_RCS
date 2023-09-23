@@ -2,11 +2,11 @@
 #include <algorithm>
 #include <iostream>
 #include <list>
-#include <map>
+#include <unordered_map>
 // #include <iostream>
 
 void insert_node_to_mapping(const BlifNode &node,
-                            std::map<std::string, size_t> &mapping,
+                            std::unordered_map<std::string, size_t> &mapping,
                             size_t &max) {
   size_t max_level = 1;
   const auto &inputs = node.inputs;
@@ -21,7 +21,7 @@ void insert_node_to_mapping(const BlifNode &node,
 }
 
 void Heuristic::parse(const std::vector<BlifNode> &inputs) {
-  std::map<std::string, size_t> node_to_level;
+  std::unordered_map<std::string, size_t> node_to_level;
   size_t max = 0;
   for (const auto &node : inputs) {
     insert_node_to_mapping(node, node_to_level, max);

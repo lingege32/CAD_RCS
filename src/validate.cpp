@@ -1,7 +1,7 @@
 #include "validate.hpp"
 #include <fstream>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <sstream>
 namespace {
 
@@ -28,7 +28,7 @@ const char *getName(LogicGate g) {
   }
   return "";
 }
-int add_to_mapping(std::map<std::string, std::pair<size_t, LogicGate>> &mapping,
+int add_to_mapping(std::unordered_map<std::string, std::pair<size_t, LogicGate>> &mapping,
                    std::vector<std::string> &gate_strs, size_t deep,
                    size_t constraint, LogicGate logic) {
   int err = 0;
@@ -47,7 +47,7 @@ int add_to_mapping(std::map<std::string, std::pair<size_t, LogicGate>> &mapping,
   return err;
 }
 
-int parse_one_line(std::map<std::string, std::pair<size_t, LogicGate>> &mapping,
+int parse_one_line(std::unordered_map<std::string, std::pair<size_t, LogicGate>> &mapping,
                    int and_g, int or_g, int inv_g, const std::string &line) {
 
   auto colon_pos = line.find(':');
@@ -68,14 +68,14 @@ int parse_one_line(std::map<std::string, std::pair<size_t, LogicGate>> &mapping,
   err |= add_to_mapping(mapping, inv_vec, deep, inv_g, LogicGate::INV);
   return err;
 }
-std::map<std::string, std::pair<size_t, LogicGate>>
+std::unordered_map<std::string, std::pair<size_t, LogicGate>>
 validate_constraint(const std::string &file, int and_g, int or_g, int inv_g,
                     int &err) {
   err = 0;
   std::ifstream fin{file, std::ios::in};
   std::string buffer;
   std::getline(fin, buffer);
-  std::map<std::string, std::pair<size_t, LogicGate>> ret;
+  std::unordered_map<std::string, std::pair<size_t, LogicGate>> ret;
   size_t deep = 0;
   while (std::getline(fin, buffer)) {
     if (buffer.find("LATENCY:") != std::string::npos) {
@@ -104,6 +104,7 @@ int Validate::validate(const std::vector<BlifNode> &nodes) {
     if (it == mapping.end()) {
       std::cout << node.output << " is not in the results.\n";
       err = 4;
+      continue;
     }
     auto deep = it->second.first;
     auto logic = it->second.second;
