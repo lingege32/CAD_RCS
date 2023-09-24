@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
     return v.validate(parse.getAllNodes());
   }
   auto algorithm = makeAlgorithm(arg.mode);
-  algorithm->parse(parse.getAllNodes());
+  algorithm->parse(parse.getAllNodes(), parse.inputs);
   auto result =
       algorithm->run(arg.and_constraint, arg.or_constraint, arg.inv_constraint);
 

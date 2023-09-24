@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <iostream>
 #include <list>
-#include <unordered_map>
-// #include <iostream>
+#include <queue>
+#include <unordered_set>
 
 void insert_node_to_mapping(const BlifNode &node,
                             std::unordered_map<std::string, size_t> &mapping,
@@ -20,99 +20,123 @@ void insert_node_to_mapping(const BlifNode &node,
   mapping.emplace(node.output, max_level);
 }
 
-void Heuristic::parse(const std::vector<BlifNode> &inputs) {
-  std::unordered_map<std::string, size_t> node_to_level;
-  size_t max = 0;
-  for (const auto &node : inputs) {
-    insert_node_to_mapping(node, node_to_level, max);
-  }
-  BestSolution.resize(max);
-  for (const auto &node : inputs) {
-    auto out = node.output;
-    auto level = node_to_level[out] - 1;
-    BestSolution[level].emplace_back(node);
+void Heuristic::parse(const std::vector<BlifNode> &all_nodes,
+                      const std::vector<std::string> &primary_input) {
+
+  PrimaryInputs = primary_input;
+  for (const auto &node : all_nodes) {
+    Mapping[node.output] = node;
   }
 }
 
-void try_place_the_nodes(std::vector<BlifNode> &v, BlifNode &node, int &con,
-                         const std::list<BlifNode> &candidate) {
+std::unordered_map<std::string, std::pair<size_t, std::vector<std::string>>>
+prepare_node_inputs_mapping(
+    const std::unordered_set<std::string> &PrimaryInputs,
+    const std::unordered_map<std::string, BlifNode> &mapping) {
+  std::unordered_map<std::string, std::pair<size_t, std::vector<std::string>>>
+      node_in_out;
+  for (const auto &pair : mapping) {
+    auto &name = pair.first;
+    auto &node = pair.second;
+    auto input_nums = std::count_if(
+        node.inputs.begin(), node.inputs.end(), [&](const auto &n) {
+          return PrimaryInputs.find(n) == PrimaryInputs.end();
+        });
+    node_in_out[name].first = input_nums;
+    for (const auto &input : node.inputs) {
+      if (PrimaryInputs.find(input) == PrimaryInputs.end()) {
+        node_in_out[input].second.push_back(name);
+      }
+    }
+  }
+  return node_in_out;
+}
+
+void try_insert_the_node(
+    const std::string &n, std::vector<std::string> &one_level, int &con,
+    std::unordered_map<std::string, std::pair<size_t, std::vector<std::string>>>
+        &node_in_out,
+    std::queue<std::string> &second_queue) {
   if (con == 0) {
+    second_queue.push(n);
     return;
   }
-  for (const auto &input : node.inputs) {
-    if (std::any_of(v.begin(), v.end(), [&](const BlifNode &node) {
-          return node.output == input;
-        })) {
-      return;
-    }
-    if (std::any_of(
-            candidate.begin(), candidate.end(),
-            [&](const BlifNode &node) { return node.output == input; })) {
-      return;
+  con--;
+  one_level.emplace_back(n);
+  for (const auto &input : node_in_out[n].second) {
+    if (0 == --node_in_out[input].first) {
+      second_queue.push(input);
     }
   }
-  con--;
-  v.emplace_back(std::move(node));
-  node.output = "";
 }
+
 std::vector<std::array<std::string, 3>> Heuristic::run(int and_con, int or_con,
                                                        int inv_con) {
+  std::unordered_set<std::string> Placed;
+  for (const auto &input : PrimaryInputs) {
+    Placed.emplace(input);
+  }
+  auto input_num_of_the_node = prepare_node_inputs_mapping(Placed, Mapping);
 
-  std::vector<BlifNode> one_level_ans;
-  std::list<BlifNode> list1, list2;
-  std::vector<std::vector<BlifNode>> ans;
-  for (auto every_level : BestSolution) {
-    std::sort(every_level.begin(), every_level.end(),
-              [](const BlifNode &lhs, const BlifNode &rhs) {
-                return lhs.inputs.size() > rhs.inputs.size();
-              });
-    std::move(every_level.begin(), every_level.end(),
-              std::back_inserter(list1));
+  auto cmp = [&](const std::string &lhs, const std::string &rhs) {
+    return Mapping[lhs].inputs.size() < Mapping[rhs].inputs.size();
+  };
+  std::priority_queue<std::string, std::vector<std::string>, decltype(cmp)>
+      candidates{cmp};
+  for (const auto &pair : input_num_of_the_node) {
+    if (pair.second.first == 0) {
+      candidates.push(pair.first);
+    }
   }
-  int and_c = and_con;
-  int or_c = or_con;
-  int inv_c = inv_con;
 
-  while (!list1.empty() || !list2.empty()) {
-    if (list1.empty() || (and_c == 0 && or_c == 0 && inv_c == 0)) {
-      ans.emplace_back(std::move(one_level_ans));
-      one_level_ans.clear();
-      and_c = and_con;
-      or_c = or_con;
-      inv_c = inv_con;
-      list2.splice(list2.end(), list1);
-      list1.swap(list2);
+  std::queue<std::string> second_queue;
+  int ac = and_con;
+  int oc = or_con;
+  int ic = inv_con;
+  std::vector<std::string> one_level;
+  std::vector<std::vector<std::string>> ans;
+  while (!(candidates.empty() && second_queue.empty())) {
+    if (candidates.empty() || (ac == 0 && oc == 0 && ic == 0)) {
+      ac = and_con;
+      oc = or_con;
+      ic = inv_con;
+      ans.emplace_back(std::move(one_level));
+      decltype(one_level){}.swap(one_level);
+      while (!second_queue.empty()) {
+        candidates.push(second_queue.front());
+        second_queue.pop();
+      }
     }
-    auto &n = list1.front();
-    if (n.gate == LogicGate::AND) {
-      try_place_the_nodes(one_level_ans, n, and_c, list2);
-    } else if (n.gate == LogicGate::OR) {
-      try_place_the_nodes(one_level_ans, n, or_c, list2);
-    } else if (n.gate == LogicGate::INV) {
-      try_place_the_nodes(one_level_ans, n, inv_c, list2);
+
+    auto n = candidates.top();
+    candidates.pop();
+    const auto &blifnode = Mapping[n];
+    if (blifnode.gate == LogicGate::AND) {
+      try_insert_the_node(n, one_level, ac, input_num_of_the_node,
+                          second_queue);
+    } else if (blifnode.gate == LogicGate::OR) {
+      try_insert_the_node(n, one_level, oc, input_num_of_the_node,
+                          second_queue);
+    } else if (blifnode.gate == LogicGate::INV) {
+      try_insert_the_node(n, one_level, ic, input_num_of_the_node,
+                          second_queue);
     }
-    if (n.output != "") {
-      list2.push_back(n);
-    }
-    list1.pop_front();
   }
-  if (!one_level_ans.empty()) {
-    ans.emplace_back(std::move(one_level_ans));
-  }
+  ans.emplace_back(std::move(one_level));
   std::vector<std::array<std::string, 3>> ret;
   ret.reserve(ans.size());
   for (const auto &a : ans) {
-    std::array<std::string, 3> one_level;
+    std::array<std::string, 3> one_level_ret;
     for (const auto &node : a) {
-      one_level[static_cast<size_t>(node.gate)] += node.output;
-      one_level[static_cast<size_t>(node.gate)] += " ";
+      one_level_ret[static_cast<size_t>(Mapping[node].gate)] += node;
+      one_level_ret[static_cast<size_t>(Mapping[node].gate)] += " ";
     }
-    for (auto &gate_info : one_level) {
+    for (auto &gate_info : one_level_ret) {
       if (!gate_info.empty()) {
         gate_info.resize(gate_info.size() - 1);
       }
     }
-    ret.emplace_back(std::move(one_level));
+    ret.emplace_back(std::move(one_level_ret));
   }
   return ret;
 }
